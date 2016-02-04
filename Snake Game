@@ -1,0 +1,240 @@
+/*Snake Game*/
+
+#include<windows.h>
+#include<stdio.h>
+#include<string.h>
+#include<stdlib.h>
+
+struct snake_align
+ {
+  int x_co, y_co;
+ }sa[77],food;
+
+int len=7;
+int x_rear=0,y_rear=0,k,x_front=0,y_front,x_new=0,y_new=0;
+char pos[23][78],dir,pre_dir='X';
+
+const unsigned short MSB = 0x8000;
+int listenKeyPress(short p_key)
+ {
+  if(GetAsyncKeyState(p_key)& MSB)
+        return 1;
+  else
+        return 0;
+ }
+
+COORD co={0,0};
+void gotoxy(int x, int y)
+ {
+     co.X=x;
+     co.Y=y;
+     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),co);
+ }
+
+void end()
+ {
+  int i,j;
+  system("cls");
+  for(j=0;j<300000000;j++);
+  for(i=0;i<11;i++)
+   {
+    gotoxy(35,i);
+    printf("--The End--");
+    for(j=0;j<65000000;j++);
+    gotoxy(35,i);
+    printf("           ");
+   }
+  gotoxy(35,i);
+  printf("--The End--");
+  gotoxy(0,24);
+ }
+
+void new_pos(int new_x,int new_y)
+ {
+  int i;
+  for(i=0;i<len-1;i++)
+   {
+    sa[i].x_co=sa[i+1].x_co;
+    sa[i].y_co=sa[i+1].y_co;
+   }
+  sa[i].x_co=new_x;
+  sa[i].y_co=new_y;
+  x_rear=sa[0].x_co;
+  y_rear=sa[0].y_co;
+ }
+
+int dead_snake()
+ {
+  int i,j;
+  for(i=0;i<len-1;i++)
+    for(j=i+1;j<len;j++)
+      if((sa[i].x_co==sa[j].x_co)&&(sa[i].y_co==sa[j].y_co))
+        return 0;
+  return 1;
+ }
+
+void print_snake()
+ {
+  int i;
+  for(i=0;i<22;i++)
+     {
+      gotoxy(1,i+1);
+      printf("%s\n",pos[i]);
+     }
+ }
+
+void move(char dir)
+ {
+  switch(dir)
+     {
+      case 'U':if(x_front==0)
+                 x_front=21;
+               else
+                 x_front--;
+               break;
+      case 'D':if(x_front==21)
+                 x_front=0;
+               else
+                 x_front++;
+               break;
+      case 'L':if(y_front==0)
+                 y_front=76;
+               else
+                 y_front--;
+               break;
+      case 'R':if(y_front==76)
+                 y_front=0;
+               else
+                 y_front++;
+     }
+ }
+
+void place_food()
+ {
+  int i=1,j,flag=0;
+  time_t t;
+  srand((unsigned) (time(&t)));
+  while(i)
+   {
+    food.x_co=rand()%23;
+    food.y_co=rand()%76;
+    for(j=0;j<len;j++)
+     {
+      if((sa[j].x_co==food.x_co)&&(sa[j].y_co==food.y_co))
+        break;
+      else if((j==len-1))
+        flag=1;
+     }
+    if(flag==1)
+      i=0;
+   }
+  pos[food.x_co][food.y_co]='*';
+ }
+
+int eat_status(char dir)
+ {
+  if((sa[len-1].x_co==food.x_co)&&(sa[len-1].y_co==food.y_co))
+   {
+    move(dir);
+    sa[len].x_co=x_front;
+    sa[len].y_co=y_front;
+    dir_provider();
+    pos[sa[len].x_co][sa[len].y_co]='*';
+    len++;
+    return 1;
+   }
+  return 0;
+ }
+
+void box()
+ {
+  int i,j;
+  printf(" ");
+  for(i=0;i<77;i++)
+    printf("-");
+  for(j=0;j<22;j++)
+   {
+    printf("\n|");
+    for(i=0;i<77;i++)
+      printf(" ");
+    printf("|");
+   }
+  printf("\n ");
+  for(i=0;i<77;i++)
+    printf("-");
+ }
+
+void dir_provider()
+ {
+  if((listenKeyPress(VK_UP))&&(pre_dir!='D'))
+    pre_dir=dir='U';
+  else if((listenKeyPress(VK_DOWN))&&(pre_dir!='U'))
+    pre_dir=dir='D';
+  else if((listenKeyPress(VK_RIGHT))&&(pre_dir!='L'))
+    pre_dir=dir='R';
+  else if((listenKeyPress(VK_LEFT))&&(pre_dir!='R'))
+    pre_dir=dir='L';
+  else if(listenKeyPress(VK_ESCAPE))
+   {
+    system("pause");
+    system("cls");
+    box();
+   }
+ }
+
+void main()
+ {
+  int i,j;
+  system("COLOR 0E");
+  for(i=0;i<22;i++)
+   {
+     pos[i][77]='\0';
+     for(j=0;j<77;j++)
+       pos[i][j]=' ';
+   }
+  for(y_front=0;y_front<len;y_front++)
+   {
+    pos[0][y_front]='*';
+    sa[y_front].x_co=0;
+    sa[y_front].y_co=y_front;
+   }
+  y_front--;
+  gotoxy(0,0);
+  box();
+  place_food();
+  gotoxy(1,1);
+  print_snake();
+  getch();
+  while(dead_snake())
+   {
+    dir_provider();
+    pos[x_rear][y_rear]=' ';
+    if(eat_status(dir))
+      place_food();
+    else
+     {
+      move(dir);
+      new_pos(x_front,y_front);
+     }
+    for(k=0;k<len;k++)
+      pos[sa[k].x_co][sa[k].y_co]='*';
+    print_snake();
+    for(k=0;k<40000000;k++);
+   }
+  for(k=0;k<6;k++)
+   {
+    print_snake();
+    for(i=0;i<70000000;i++);
+      for(j=1;j<23;j++)
+       {
+        gotoxy(1,j);
+        for(i=1;i<78;i++)
+          printf(" ");
+       }
+    for(i=0;i<70000000;i++);
+   }
+  end();
+  gotoxy(0,24);
+  printf("Press SPACE to Continue......");
+  while(!listenKeyPress(VK_SPACE));
+ }
